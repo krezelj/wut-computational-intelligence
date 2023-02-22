@@ -21,7 +21,7 @@ class Layer():
 
     __slots__ = ['weights', 'biases', 'activation', 'input_dim', 'output_dim']
 
-    def __init__(self, input_dim, output_dim, weights=None, biases=None, activation="tanh"):
+    def __init__(self, input_dim, output_dim, weights=None, biases=None, activation="sigmoid"):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.activation = activation
@@ -35,7 +35,7 @@ class Layer():
         if biases is None:
             self.__init_biases()
         else:
-            assert(biases.shape == (output_dim,))
+            assert(biases.shape == (output_dim, 1))
             self.biases = biases
 
     def forward(self, input):
@@ -63,12 +63,23 @@ class Layer():
 
 
 def main():
-    model = MLP(layers=[
-        Layer(2, 1, activation="linear", weights=np.array(
-            [[1, -1]]), biases=np.array([2]))
+    W1 = np.array([
+        [0], [0], [0], [0], [0]
     ])
-    values = np.array([1, 2])
-    print(model.predict(values))
+    B1 = np.array([
+        0, 0, 0, 0, 0
+    ])
+    W2 = np.array([
+        [0, 0, 0, 0, 0]
+    ])
+    B2 = np.array([
+        0
+    ])
+    model = MLP(layers=[
+        Layer(1, 5, W1, B1),
+        Layer(5, 1, W2, B2)
+    ])
+    model.predict(np.array([[1]]))
 
 
 if __name__ == '__main__':
