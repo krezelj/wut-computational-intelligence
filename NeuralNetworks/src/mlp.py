@@ -70,14 +70,14 @@ class MLP():
         pos = nx.get_node_attributes(G, 'pos')
         weights = nx.get_edge_attributes(G, 'weight')
         weight_values = np.log10(np.abs(list(weights.values())) + 1)
-        edge_color_map = ['blue' if value > 0 else 'red'
+        edge_color_map = ['#284db5' if value > 0 else '#b52828'
                           for value in list(weights.values())]
 
         nodelist = G.nodes()
 
         nx.draw_networkx_nodes(G, pos,
                                nodelist=nodelist,
-                               node_color='black',)
+                               node_color='#353535',)
         nx.draw_networkx_edges(G, pos,
                                edgelist=weights.keys(),
                                width=weight_values,
