@@ -65,11 +65,14 @@ class MLP():
 
         return G
 
-    def plot(self):
+    def plot(self, log_weights=False):
         G = self.__get_graph_representation()
         pos = nx.get_node_attributes(G, 'pos')
         weights = nx.get_edge_attributes(G, 'weight')
-        weight_values = np.log10(np.abs(list(weights.values())) + 1)
+
+        weight_values = np.abs(list(weights.values()))
+        if log_weights:
+            weight_values = np.log10(weight_values + 1)
         edge_color_map = ['#284db5' if value > 0 else '#b52828'
                           for value in list(weights.values())]
 
