@@ -57,9 +57,11 @@ class MLP():
                 2 - 0.5  # +1 to accommodate bias
             if i < len(neurons_in_layer) - 1:   # no bias in the output layer
                 G.nodes[bias_vertex_idx]['pos'] = (i, 0 - offset)
+                G.nodes[bias_vertex_idx]['is_bias'] = True
             for j in range(neurons_in_layer[i]):
                 vertex_idx = j + vertex_idx_offset
                 G.nodes[vertex_idx]['pos'] = (i, j + 1 - offset)
+                G.nodes[vertex_idx]['is_bias'] = False
             vertex_idx_offset += neurons_in_layer[i]
             bias_vertex_idx += 1
 
@@ -68,6 +70,10 @@ class MLP():
     def plot(self, log_weights=False):
         G = self.__get_graph_representation()
         pos = nx.get_node_attributes(G, 'pos')
+        is_bias_list = list(nx.get_node_attributes(G, 'is_bias').values())
+        node_color_map = [
+            '#a0a0a0' if is_bias else '#353535' for is_bias in is_bias_list]
+
         weights = nx.get_edge_attributes(G, 'weight')
 
         weight_values = np.abs(list(weights.values()))
@@ -80,7 +86,7 @@ class MLP():
 
         nx.draw_networkx_nodes(G, pos,
                                nodelist=nodelist,
-                               node_color='#353535',)
+                               node_color=node_color_map)
         nx.draw_networkx_edges(G, pos,
                                edgelist=weights.keys(),
                                width=weight_values,
