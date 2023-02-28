@@ -96,7 +96,7 @@ class MLP():
 class Layer():
 
     __slots__ = ['weights', 'biases', 'activation',
-                 'input_dim', 'output_dim', 'last_output']
+                 'input_dim', 'output_dim', 'last_output', 'delta_weights', 'delta_bias']
 
     def __init__(self, input_dim, output_dim, weights=None, biases=None, activation="sigmoid"):
         self.input_dim = input_dim
@@ -119,6 +119,12 @@ class Layer():
         output = self.weights @ input + self.biases
         self.last_output = output
         return self.__activate(output)
+
+    def backward(self, error, learning_rate=1e-3):
+        pass
+
+    def apply_new_weights(self):
+        pass
 
     def __activate(self, values):
         if self.activation == "tanh":
