@@ -19,7 +19,7 @@ class MLP():
 
     def fit(self, X, Y, learning_rate=1e-3, loss_function='mse', batch_size=1):
         iterations = 0
-        while iterations < 1000:
+        while iterations < 5000:
             iterations += 1
             for i in range(X.shape[1]):
                 x = X[:, i].reshape(-1, 1)
@@ -142,9 +142,9 @@ class Layer():
 
     def backward(self, error, learning_rate=1e-3):
         self.delta_weights = -learning_rate * \
-            error * np.transpose(self.last_input)
+            error @ np.transpose(self.last_input)
         self.delta_biases = -learning_rate * error
-        return np.transpose(self.weights) * error
+        return np.transpose(self.weights) @ error
 
     def get_derivative_at_last_output(self):
         # TODO rename this function to something better
@@ -187,15 +187,15 @@ class Layer():
 
 
 def main():
+    x_train = np.linspace(-1, 1, 100).reshape(1, -1)
+    y_train = x_train * np.sin(5 * x_train)
+
     model = MLP(layers=[
-        Layer(2, 2, activation="linear")
+        Layer(1, 4, activation="sigmoid"),
+        Layer(4, 4, activation="sigmoid"),
+        Layer(4, 1, activation="linear")
     ])
-
-    x = np.linspace(-1, 1, 100).reshape(1, 100)
-    x = np.concatenate([x, x])
-    y = 2 * x[0, :] + 1 * x[0, :].reshape(1, -1)
-
-    model.fit(x, y)
+    model.fit(x_train, y_train, learning_rate=0.01)
 
 
 if __name__ == '__main__':
