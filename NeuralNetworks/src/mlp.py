@@ -183,7 +183,7 @@ class Layer():
         self.weights = np.random.random((self.output_dim, self.input_dim))
 
     def __init_biases(self):
-        self.biases = np.random.random(self.output_dim)
+        self.biases = np.random.random((self.output_dim, 1))
 
 
 def main():
