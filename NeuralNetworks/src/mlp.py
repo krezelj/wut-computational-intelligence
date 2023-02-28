@@ -95,7 +95,8 @@ class MLP():
 
 class Layer():
 
-    __slots__ = ['weights', 'biases', 'activation', 'input_dim', 'output_dim']
+    __slots__ = ['weights', 'biases', 'activation',
+                 'input_dim', 'output_dim', 'last_output']
 
     def __init__(self, input_dim, output_dim, weights=None, biases=None, activation="sigmoid"):
         self.input_dim = input_dim
@@ -116,6 +117,7 @@ class Layer():
 
     def forward(self, input):
         output = self.weights @ input + self.biases
+        self.last_output = output
         return self.__activate(output)
 
     def __activate(self, values):
