@@ -17,6 +17,25 @@ class MLP():
 
         return output
 
+    def fit(self, X, Y, learning_rate=1e-3, loss_function='mse', batch_size=1):
+        iterations = 0
+        while iterations < 1000:
+            iterations += 1
+            for i in range(X.shape[1]):
+                x = X[:, i].reshape(-1, 1)
+                y = Y[:, i].reshape(-1, 1)
+                y_predicted = self.predict(x)
+
+                # propagate backwards
+                error = y_predicted - y
+                for layer in self.layers[::-1]:
+                    error *= layer.get_derivative_at_last_output()
+                    error = layer.backward(error, learning_rate)
+
+                # apply new weights
+                for layer in self.layers:
+                    layer.apply_new_weights()
+
     def __get_graph_representation(self) -> nx.DiGraph:
         G = nx.DiGraph()
 
@@ -96,7 +115,7 @@ class MLP():
 class Layer():
 
     __slots__ = ['weights', 'biases', 'activation',
-                 'input_dim', 'output_dim', 'last_output', 'delta_weights', 'delta_bias']
+                 'input_dim', 'output_dim', 'last_input', 'last_output', 'delta_weights', 'delta_biases']
 
     def __init__(self, input_dim, output_dim, weights=None, biases=None, activation="sigmoid"):
         self.input_dim = input_dim
@@ -116,15 +135,36 @@ class Layer():
             self.biases = biases
 
     def forward(self, input):
-        output = self.weights @ input + self.biases
+        self.last_input = input
+        output = self.__activate(self.weights @ input + self.biases)
         self.last_output = output
-        return self.__activate(output)
+        return output
 
     def backward(self, error, learning_rate=1e-3):
-        pass
+        self.delta_weights = -learning_rate * \
+            error * np.transpose(self.last_input)
+        self.delta_biases = -learning_rate * error
+        return np.transpose(self.weights) * error
+
+    def get_derivative_at_last_output(self):
+        # TODO rename this function to something better
+        # TODO parametrise epsilon
+        eps = 1e-3
+        if self.activation == "tanh":
+            return 1 - self.last_output**2
+        elif self.activation == "sigmoid":
+            return self.last_output * (1 - self.last_output)
+        elif self.activation == "relu":
+            return (self.last_output > 0) * (1 - eps) + eps
+        elif self.activation == "linear":
+            return np.ones(shape=self.last_output.shape)
+        elif self.activation == "softmax":
+            # TODO implement softmax derivatives
+            raise NotImplementedError()
 
     def apply_new_weights(self):
-        pass
+        self.weights += self.delta_weights
+        self.biases += self.delta_biases
 
     def __activate(self, values):
         if self.activation == "tanh":
@@ -147,24 +187,15 @@ class Layer():
 
 
 def main():
-    W1 = np.array([
-        [-3.2], [-4.5], [3.2], [4.5], [0]
-    ])
-    B1 = np.array([
-        -3, -7.62, -3, -7.62, 0
-    ]).reshape(5, -1)
-    W2 = np.array([
-        [170, 242, 170, 242, 0]
-    ])
-    B2 = np.array([
-        -145
-    ]).reshape(1, -1)
-
     model = MLP(layers=[
-        Layer(1, 5, W1, B1),
-        Layer(5, 1, W2, B2, activation="linear")
+        Layer(2, 2, activation="linear")
     ])
-    model.plot()
+
+    x = np.linspace(-1, 1, 100).reshape(1, 100)
+    x = np.concatenate([x, x])
+    y = 2 * x[0, :] + 1 * x[0, :].reshape(1, -1)
+
+    model.fit(x, y)
 
 
 if __name__ == '__main__':
