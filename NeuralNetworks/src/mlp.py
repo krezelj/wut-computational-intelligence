@@ -17,13 +17,19 @@ class MLP():
 
         return output
 
-    def fit(self, X, Y, learning_rate=1e-3, loss_function='mse', batch_size=1):
-        iterations = 0
-        while iterations < 5000:
-            iterations += 1
+    def fit(self, X, Y, learning_rate=1e-3, loss_function='mse', batch_size=1, verbose=0):
+        iteration = 0
+        MAX_ITERATIONS = 1000
+        while iteration < MAX_ITERATIONS:
+            if verbose > 0:
+                print(f"iteration: {iteration}/{MAX_ITERATIONS}")
+            iteration += 1
+            random_indices = np.arange(0, X.shape[1])
+            X = X[:, random_indices]
+            Y = Y[:, random_indices]
             for i in range(X.shape[1]):
-                x = X[:, i].reshape(-1, 1)
-                y = Y[:, i].reshape(-1, 1)
+                x = X[:, [i]].reshape(-1, 1)
+                y = Y[:, [i]].reshape(-1, 1)
                 y_predicted = self.predict(x)
 
                 # propagate backwards
@@ -125,16 +131,17 @@ class Layer():
         if weights is None:
             self.__init_weights()
         else:
-            assert(weights.shape == (output_dim, input_dim))
+            assert (weights.shape == (output_dim, input_dim))
             self.weights = weights
 
         if biases is None:
             self.__init_biases()
         else:
-            assert(biases.shape == (output_dim, 1))
+            assert (biases.shape == (output_dim, 1))
             self.biases = biases
 
     def forward(self, input):
+        # TODO Add remember weights parameter (False by default should be set as True when fitting)
         self.last_input = input
         output = self.__activate(self.weights @ input + self.biases)
         self.last_output = output
@@ -143,7 +150,9 @@ class Layer():
     def backward(self, error, learning_rate=1e-3):
         self.delta_weights = -learning_rate * \
             error @ np.transpose(self.last_input)
-        self.delta_biases = -learning_rate * error
+        # TODO Here we should sum in the axis=1 (sum rows) (at least I think)
+        self.delta_biases = np.sum(-learning_rate *
+                                   error, axis=1).reshape(-1, 1)
         return np.transpose(self.weights) @ error
 
     def get_derivative_at_last_output(self):
@@ -180,10 +189,10 @@ class Layer():
         return values
 
     def __init_weights(self):
-        self.weights = np.random.random((self.output_dim, self.input_dim))
+        self.weights = np.random.uniform(-1, 1, (self.output_dim, self.input_dim))
 
     def __init_biases(self):
-        self.biases = np.random.random((self.output_dim, 1))
+        self.biases = np.random.uniform(-1, 1, (self.output_dim, 1))
 
 
 def main():
