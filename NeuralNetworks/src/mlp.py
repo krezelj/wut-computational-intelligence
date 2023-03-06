@@ -1,6 +1,7 @@
 import numpy as np
 import networkx as nx
 from scipy.special import expit, softmax
+from sklearn.metrics import mean_squared_error
 
 
 class MLP():
@@ -17,22 +18,32 @@ class MLP():
 
         return output
 
-    def fit(self, X, Y, learning_rate=1e-3, loss_function='mse', batch_size=1, verbose=0):
-        iteration = 0
-        MAX_ITERATIONS = 1000
-        while iteration < MAX_ITERATIONS:
+    def fit(self, X, Y, learning_rate=1e-3, epochs=1, loss_function='mse', batch_size=1, verbose=0):
+        epoch = 0
+        batches_per_episode = int(np.ceil(X.shape[1] / batch_size))
+
+        loss = []
+        while epoch < epochs:
             if verbose > 0:
-                print(f"iteration: {iteration}/{MAX_ITERATIONS}")
-            iteration += 1
+                print(f"epoch: {epoch}/{epochs}")
+            epoch += 1
+
+            # reorder samples for each episode
             random_indices = np.arange(0, X.shape[1])
+            np.random.shuffle(random_indices)
             X = X[:, random_indices]
             Y = Y[:, random_indices]
-            for i in range(X.shape[1]):
-                x = X[:, [i]].reshape(-1, 1)
-                y = Y[:, [i]].reshape(-1, 1)
+
+            # fitting
+            for batch_idx in range(batches_per_episode):
+                batch_start_idx = batch_idx * batch_size
+                batch_end_idx = (batch_idx + 1) * batch_size
+
+                x = X[:, batch_start_idx:batch_end_idx]
+                y = Y[:, batch_start_idx:batch_end_idx]
                 y_predicted = self.predict(x)
 
-                # propagate backwards
+                # TODO To clean up
                 error = y_predicted - y
                 for layer in self.layers[::-1]:
                     error *= layer.get_derivative_at_last_output()
@@ -41,6 +52,11 @@ class MLP():
                 # apply new weights
                 for layer in self.layers:
                     layer.apply_new_weights()
+
+            # calculate loss after epoch
+            loss.append(mean_squared_error(Y, self.predict(X)))
+
+        return loss
 
     def __get_graph_representation(self) -> nx.DiGraph:
         G = nx.DiGraph()
@@ -148,12 +164,11 @@ class Layer():
         return output
 
     def backward(self, error, learning_rate=1e-3):
-        self.delta_weights = -learning_rate * \
-            error @ np.transpose(self.last_input)
-        # TODO Here we should sum in the axis=1 (sum rows) (at least I think)
-        self.delta_biases = np.sum(-learning_rate *
-                                   error, axis=1).reshape(-1, 1)
-        return np.transpose(self.weights) @ error
+        N = error.shape[1]
+        self.delta_weights = -learning_rate * error @ np.transpose(self.last_input) / N
+        self.delta_biases = -np.mean(learning_rate * error, axis=1, keepdims=True)
+        new_error = np.transpose(self.weights) @ error
+        return new_error
 
     def get_derivative_at_last_output(self):
         # TODO rename this function to something better
@@ -189,22 +204,26 @@ class Layer():
         return values
 
     def __init_weights(self):
-        self.weights = np.random.uniform(-1, 1, (self.output_dim, self.input_dim))
+        self.weights = np.random.uniform(0, 1, (self.output_dim, self.input_dim))
 
     def __init_biases(self):
-        self.biases = np.random.uniform(-1, 1, (self.output_dim, 1))
+        self.biases = np.random.uniform(0, 1, (self.output_dim, 1))
+
 
 
 def main():
-    x_train = np.linspace(-1, 1, 100).reshape(1, -1)
-    y_train = x_train * np.sin(5 * x_train)
+    import pandas as pd
+    df_training = pd.read_csv("NeuralNetworks/data/mio1/regression/square-simple-training.csv", index_col=0)
+    df_test = pd.read_csv("NeuralNetworks/data/mio1/regression/square-simple-test.csv", index_col=0)
+
+    x_train = df_training['x'].values.reshape(1, 100)
+    y_train = df_training['y'].values.reshape(1, 100)
 
     model = MLP(layers=[
-        Layer(1, 4, activation="sigmoid"),
-        Layer(4, 4, activation="sigmoid"),
-        Layer(4, 1, activation="linear")
+        Layer(1, 6),
+        Layer(6, 1, activation="linear")
     ])
-    model.fit(x_train, y_train, learning_rate=0.01)
+    model.fit(x_train, y_train, learning_rate=0.001, verbose=1, batch_size=20, epochs=1e4)
 
 
 if __name__ == '__main__':
