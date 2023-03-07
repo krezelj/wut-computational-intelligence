@@ -11,10 +11,10 @@ class MLP():
     def __init__(self, layers):
         self.layers = layers
 
-    def predict(self, input):
+    def predict(self, input, remember_data=False):
         output = input
         for layer in self.layers:
-            output = layer.forward(output)
+            output = layer.forward(output, remember_data=remember_data)
 
         return output
 
@@ -41,12 +41,12 @@ class MLP():
 
                 x = X[:, batch_start_idx:batch_end_idx]
                 y = Y[:, batch_start_idx:batch_end_idx]
-                y_predicted = self.predict(x)
+                y_predicted = self.predict(x, remember_data=True)
 
                 # TODO To clean up
                 error = y_predicted - y
                 for layer in self.layers[::-1]:
-                    error *= layer.get_derivative_at_last_output()
+                    error *= layer.activation_derivative(layer.last_output)
                     error = layer.backward(error, learning_rate)
 
                 # apply new weights
@@ -156,32 +156,31 @@ class Layer():
             assert (biases.shape == (output_dim, 1))
             self.biases = biases
 
-    def forward(self, input):
-        # TODO Add remember weights parameter (False by default should be set as True when fitting)
-        self.last_input = input
+    def forward(self, input, remember_data=False):
         output = self.__activate(self.weights @ input + self.biases)
-        self.last_output = output
+        if remember_data:
+            self.last_input = input
+            self.last_output = output
         return output
 
     def backward(self, error, learning_rate=1e-3):
-        N = error.shape[1]
-        self.delta_weights = -learning_rate * error @ np.transpose(self.last_input) / N
+        batch_size = error.shape[1]
+        self.delta_weights = -learning_rate * error @ np.transpose(self.last_input) / batch_size
         self.delta_biases = -np.mean(learning_rate * error, axis=1, keepdims=True)
         new_error = np.transpose(self.weights) @ error
         return new_error
 
-    def get_derivative_at_last_output(self):
-        # TODO rename this function to something better
+    def activation_derivative(self, values):
         # TODO parametrise epsilon
         eps = 1e-3
         if self.activation == "tanh":
-            return 1 - self.last_output**2
+            return 1 - values**2
         elif self.activation == "sigmoid":
-            return self.last_output * (1 - self.last_output)
+            return values * (1 - values)
         elif self.activation == "relu":
-            return (self.last_output > 0) * (1 - eps) + eps
+            return (values > 0) * (1 - eps) + eps
         elif self.activation == "linear":
-            return np.ones(shape=self.last_output.shape)
+            return np.ones(shape=values.shape)
         elif self.activation == "softmax":
             # TODO implement softmax derivatives
             raise NotImplementedError()
@@ -204,10 +203,10 @@ class Layer():
         return values
 
     def __init_weights(self):
-        self.weights = np.random.uniform(0, 1, (self.output_dim, self.input_dim))
+        self.weights = np.random.uniform(-1, 1, (self.output_dim, self.input_dim))
 
     def __init_biases(self):
-        self.biases = np.random.uniform(0, 1, (self.output_dim, 1))
+        self.biases = np.random.uniform(-1, 1, (self.output_dim, 1))
 
 
 
@@ -224,6 +223,12 @@ def main():
         Layer(6, 1, activation="linear")
     ])
     model.fit(x_train, y_train, learning_rate=0.001, verbose=1, batch_size=20, epochs=1e4)
+
+    idx = np.where(x_train[0,:] < 0)
+    x_train = x_train[0, idx]
+    y_train = y_train[0, idx]
+
+    model.fit(x_train, y_train, learning_rate=0.001, epochs=1e4, verbose=1, batch_size=25)
 
 
 if __name__ == '__main__':
