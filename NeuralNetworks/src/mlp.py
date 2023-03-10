@@ -24,7 +24,7 @@ class MLP():
 
         loss = []
         while epoch < epochs:
-            if verbose > 0:
+            if verbose > 0 and epoch % 2000 == 0:
                 print(f"epoch: {epoch}/{epochs}")
             epoch += 1
 
@@ -56,7 +56,46 @@ class MLP():
             # calculate loss after epoch
             loss.append(mean_squared_error(Y, self.predict(X)))
 
+        print("done!")
         return loss
+    
+
+    def save_model(self, path, model_name=""):
+        full_path = path + '/' + model_name
+
+        data = {}
+        # TODO Add Enums for weights, biases, activations
+        for i, layer in enumerate(self.layers):
+            data[f'{i}_0_weights'] = layer.weights
+            data[f'{i}_1_biases'] = layer.biases
+            data[f'{i}_2_activation'] = np.array([layer.activation])
+
+        np.savez(full_path, **data)
+
+    @classmethod
+    def load_model(cls, path, model_name=""):
+        full_path = path + '/' + model_name + '.npz'
+        data = np.load(full_path)
+
+        # TODO Parametrise the number of attributes remembered per layer
+        weights = [None] * (len(data) // 3)
+        biases = [None] * (len(data) // 3)
+        activations = [None] * (len(data) // 3)
+        for key, value in data.items():
+            layer_idx = ord(key[0]) - 48
+            if key[2] == '0': # name encoding meaning weights
+                weights[layer_idx] = value
+            elif key[2] == '1': # name encoding meaning biases
+                biases[layer_idx] = value
+            elif key[2] == '2': # name encoding meaning activation
+                activations[layer_idx] = value[0]
+
+        
+        layers = [Layer(w.shape[1], w.shape[0], weights=w, biases=b, activation=a) 
+                  for w, b, a in zip(weights, biases, activations)]
+
+        return MLP(layers=layers)
+
 
 
 class Layer():
@@ -147,13 +186,10 @@ def main():
         Layer(1, 6),
         Layer(6, 1, activation="linear")
     ])
-    model.fit(x_train, y_train, learning_rate=0.001, verbose=1, batch_size=20, epochs=1e4)
 
-    idx = np.where(x_train[0,:] < 0)
-    x_train = x_train[0, idx]
-    y_train = y_train[0, idx]
-
-    model.fit(x_train, y_train, learning_rate=0.001, epochs=1e4, verbose=1, batch_size=25)
+    model.fit(x_train, y_train, learning_rate=0.001, epochs=1e1, verbose=1, batch_size=25)
+    model.save_model(".", "test")
+    MLP.load_model(".", "test")
 
 
 if __name__ == '__main__':
