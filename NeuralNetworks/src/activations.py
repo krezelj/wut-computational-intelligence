@@ -1,23 +1,19 @@
 import numpy as np
 from scipy.special import expit, softmax
 
+
 def get_activation_by_name(activation):
-        if activation == "sigmoid":
-            activation = Sigmoid()
-            return
-        elif activation == "tanh":
-            activation = Tanh()
-            return
-        elif activation == "relu":
-            activation = ReLU()
-            return
-        elif activation == "linear":
-            activation = Linear()
-            return
-        elif activation == "softmax":
-            activation = Softmax()
-            return
-        return activation
+    if activation == "sigmoid":
+        return Sigmoid()
+    elif activation == "tanh":
+        return Tanh()
+    elif activation == "relu":
+        return ReLU()
+    elif activation == "linear":
+        return Linear()
+    elif activation == "softmax":
+        return Softmax()
+    return activation
 
 
 class Linear():
