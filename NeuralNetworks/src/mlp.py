@@ -5,10 +5,11 @@ from src.layer import Layer
 
 class MLP():
 
-    __slots__ = ['layers']
+    __slots__ = ['layers', 'first_fit']
 
     def __init__(self, layers):
         self.layers = layers
+        self.first_fit = True
 
     def predict(self, input, remember_data=False):
         output = input
@@ -17,14 +18,32 @@ class MLP():
 
         return output
 
-    def fit(self, X, Y, learning_rate=1e-3, epochs=1, loss_function='mse', batch_size=1, verbose=0):
-        epoch = 0
-        batches_per_episode = int(np.ceil(X.shape[1] / batch_size))
+    def fit(self, X, Y,
+            epochs=1,
+            batch_size=1,
+            learning_rate=1e-3,
+            momentum_decay_rate=0.9,
+            squared_gradient_decay_rate=0.999,
+            warm_start=True,
+            loss_function='mse',
+            verbose=0,
+            ):
 
+        # initialise variables
+        batches_per_episode = int(np.ceil(X.shape[1] / batch_size))
         loss = []
+
+        epoch = 0
+        iteration = 0
+
+        # if warmstart False reset weights for each layer??
+        if not warm_start or self.first_fit:
+            self.first_fit = False
+            for layer in self.layers:
+                layer.reset_momentum()
+
+        # fit loop
         while epoch < epochs:
-            if verbose > 0 and epoch % 2000 == 0:
-                print(f"epoch: {epoch}/{epochs}")
             epoch += 1
 
             # reorder samples for each episode
@@ -35,6 +54,8 @@ class MLP():
 
             # fitting
             for batch_idx in range(batches_per_episode):
+                iteration += 1
+
                 batch_start_idx = batch_idx * batch_size
                 batch_end_idx = (batch_idx + 1) * batch_size
 
@@ -42,20 +63,24 @@ class MLP():
                 y = Y[:, batch_start_idx:batch_end_idx]
                 y_predicted = self.predict(x, remember_data=True)
 
-                # TODO To clean up
                 error = y_predicted - y
                 for layer in self.layers[::-1]:
                     error *= layer.activation.derivative(layer.last_output)
-                    error = layer.backward(error, learning_rate)
+                    layer.backward(error, momentum_decay_rate,
+                                   squared_gradient_decay_rate)
+                    error = np.transpose(layer.weights) @ error
 
                 # apply new weights
                 for layer in self.layers:
-                    layer.apply_new_weights()
+                    layer.update_weights(learning_rate)
 
             # calculate loss after epoch
             loss.append(mean_squared_error(Y, self.predict(X)))
 
-        print("done!")
+            if verbose > 0 and epoch % 2000 == 0:
+                print(f"epoch: {epoch}/{epochs}\tloss: {loss[-1]}")
+
+        print(f"done! final loss: {loss[-1]}")
         return loss
 
     def save_model(self, path, model_name=""):
@@ -66,7 +91,7 @@ class MLP():
         for i, layer in enumerate(self.layers):
             data[f'{i}_0_weights'] = layer.weights
             data[f'{i}_1_biases'] = layer.biases
-            data[f'{i}_2_activation'] = np.array([layer.activation])
+            data[f'{i}_2_activation_name'] = np.array([layer.activation_name])
 
         np.savez(full_path, **data)
 
@@ -88,7 +113,7 @@ class MLP():
             elif key[2] == '2':  # name encoding meaning activation
                 activations[layer_idx] = value[0]
 
-        layers = [Layer(w.shape[1], w.shape[0], weights=w, biases=b, activation=a)
+        layers = [Layer(w.shape[1], w.shape[0], weights=w, biases=b, activation_name=a)
                   for w, b, a in zip(weights, biases, activations)]
 
         return MLP(layers=layers)
