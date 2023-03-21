@@ -53,7 +53,7 @@ class Layer():
         self.momentum_biases = momentum_decay_rate * self.momentum_biases + \
             (1 - momentum_decay_rate) * gradient_biases
 
-        # update gradients squared
+        # update second moment estimate
         self.gradient_weights_squared = squared_gradient_decay_rate * self.gradient_weights_squared + \
             (1 - squared_gradient_decay_rate) * \
             np.square(gradient_weights)
@@ -61,13 +61,26 @@ class Layer():
             (1 - squared_gradient_decay_rate) * \
             np.square(gradient_biases)
 
-    def update_weights(self, learning_rate=1e-3):
-        # TODO Parametrise epsilon
-        eps = 1e-7
-        self.weights += -learning_rate * self.momentum_weights / \
-            np.sqrt(self.gradient_weights_squared + eps)
-        self.biases += -learning_rate * self.momentum_biases / \
-            np.sqrt(self.gradient_biases_squared + eps)
+    def update_weights(self, iteration,
+                       learning_rate=1e-3,
+                       momentum_decay_rate=0.9,
+                       squared_gradient_decay_rate=0.999,
+                       eps=1e-7):
+
+        # correct bias
+        momentum_weights_corrected = self.momentum_weights / \
+            (1 - momentum_decay_rate ** iteration)
+        momentum_biases_corrected = self.momentum_biases / \
+            (1 - momentum_decay_rate ** iteration)
+        gradient_weights_squared_corrected = self.gradient_weights_squared / \
+            (1 - squared_gradient_decay_rate ** iteration)
+        gradient_biases_squared_corrected = self.gradient_biases_squared / \
+            (1 - squared_gradient_decay_rate ** iteration)
+
+        self.weights += -learning_rate * momentum_weights_corrected / \
+            np.sqrt(gradient_weights_squared_corrected + eps)
+        self.biases += -learning_rate * momentum_biases_corrected / \
+            np.sqrt(gradient_biases_squared_corrected + eps)
 
     def reset_momentum(self):
         self.momentum_weights = np.zeros(shape=self.weights.shape)

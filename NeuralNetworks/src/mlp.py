@@ -72,7 +72,8 @@ class MLP():
 
                 # apply new weights
                 for layer in self.layers:
-                    layer.update_weights(learning_rate)
+                    layer.update_weights(
+                        iteration, learning_rate, momentum_decay_rate, squared_gradient_decay_rate)
 
             # calculate loss after epoch
             loss.append(mean_squared_error(Y, self.predict(X)))
@@ -120,24 +121,7 @@ class MLP():
 
 
 def main():
-    import pandas as pd
-    df_training = pd.read_csv(
-        "NeuralNetworks/data/mio1/regression/square-simple-training.csv", index_col=0)
-    df_test = pd.read_csv(
-        "NeuralNetworks/data/mio1/regression/square-simple-test.csv", index_col=0)
-
-    x_train = df_training['x'].values.reshape(1, 100)
-    y_train = df_training['y'].values.reshape(1, 100)
-
-    model = MLP(layers=[
-        Layer(1, 6),
-        Layer(6, 1, activation="linear")
-    ])
-
-    model.fit(x_train, y_train, learning_rate=0.001,
-              epochs=1e1, verbose=1, batch_size=25)
-    model.save_model(".", "test")
-    MLP.load_model(".", "test")
+    pass
 
 
 if __name__ == '__main__':
