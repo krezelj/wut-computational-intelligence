@@ -72,7 +72,7 @@ class ReLU():
 class Softmax():
 
     def __call__(self, values):
-        return softmax(values)
+        return softmax(values, axis=0)
 
     def derivative(self, values, activated=True):
         # if activated set to True it's assumed that values are already an output of the softmax function
