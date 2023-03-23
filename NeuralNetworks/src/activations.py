@@ -21,11 +21,16 @@ class Linear():
     def __call__(self, values):
         return values
 
-    def derivative(self, values, activated=True):
-        # if activated set to True it's assumed that values are already an output of the sigmoid function
+    def derivative(self, values, activated=True, error=None):
+        # if activated set to True it's assumed that values are already an output of the linear function
         if not activated:
             values = self(values)
-        return np.ones(shape=values.shape)
+
+        derivative = np.ones(shape=values.shape)
+        if error is None:
+            return derivative
+        else:
+            return error * derivative
 
 
 class Sigmoid():
@@ -33,11 +38,16 @@ class Sigmoid():
     def __call__(self, values):
         return expit(values)
 
-    def derivative(self, values, activated=True):
+    def derivative(self, values, activated=True, error=None):
         # if activated set to True it's assumed that values are already an output of the sigmoid function
         if not activated:
             values = self(values)
-        return values * (1 - values)
+
+        derivative = values * (1 - values)
+        if error is None:
+            return derivative
+        else:
+            return error * derivative
 
 
 class Tanh():
@@ -45,11 +55,15 @@ class Tanh():
     def __call__(self, values):
         return np.tanh(values)
 
-    def derivative(self, values, activated=True):
+    def derivative(self, values, activated=True, error=None):
         # if activated set to True it's assumed that values are already an output of the tanh function
         if not activated:
             values = self(values)
-        return 1 - values**2
+        derivative = 1 - values**2
+        if error is None:
+            return derivative
+        else:
+            return error * derivative
 
 
 class ReLU():
@@ -62,11 +76,16 @@ class ReLU():
     def __call__(self, values):
         return np.maximum(0, values)
 
-    def derivative(self, values, activated=True):
+    def derivative(self, values, activated=True, error=None):
         # if activated set to True it's assumed that values are already an output of the relu function
         if not activated:
             values = self(values)
-        return (values > 0) * (1 - self.eps) + self.eps
+
+        derivative = (values > 0) * (1 - self.eps) + self.eps
+        if error is None:
+            return derivative
+        else:
+            return error * derivative
 
 
 class Softmax():
@@ -74,11 +93,23 @@ class Softmax():
     def __call__(self, values):
         return softmax(values, axis=0)
 
-    def derivative(self, values, activated=True):
+    def derivative(self, values, activated=True, error=None):
         # if activated set to True it's assumed that values are already an output of the softmax function
         if not activated:
             values = self(values)
-        raise NotImplementedError
+
+        output_dim = error.shape[0]
+        batch_size = error.shape[1]
+
+        I = np.stack([np.identity(output_dim)] * batch_size, axis=1)
+        values = values.reshape((output_dim, batch_size, 1))
+
+        J = np.transpose((I - values), axes=(2, 1, 0)) * values
+
+        if error is None:
+            return J
+        else:
+            return np.einsum('nbk,kb->nb', J, error)
 
 
 def main():
