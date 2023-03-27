@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, log_loss
 from src.layer import Layer
 
 
@@ -63,9 +63,14 @@ class MLP():
                 y = Y[:, batch_start_idx:batch_end_idx]
                 y_predicted = self.predict(x, remember_data=True)
 
-                error = y_predicted - y
+                # error = 2 * (y_predicted - y) / y_predicted.shape[0]
+                eps = np.finfo(y_predicted.dtype).eps
+                y_predicted = np.maximum(eps, np.minimum(1 - eps, y_predicted))
+                error = ((1 - y) / (1 - y_predicted) - y /
+                         y_predicted) / y_predicted.shape[0]
                 for layer in self.layers[::-1]:
-                    error *= layer.activation.derivative(layer.last_output)
+                    error = layer.activation.derivative(
+                        layer.last_output, error=error)
                     layer.backward(error, momentum_decay_rate,
                                    squared_gradient_decay_rate)
                     error = np.transpose(layer.weights) @ error
@@ -76,9 +81,12 @@ class MLP():
                         iteration, learning_rate, momentum_decay_rate, squared_gradient_decay_rate)
 
             # calculate loss after epoch
-            loss.append(mean_squared_error(Y, self.predict(X)))
+            if loss_function == 'mse':
+                loss.append(mean_squared_error(Y.T, self.predict(X).T))
+            elif loss_function == 'log_loss':
+                loss.append(log_loss(Y.T, self.predict(X).T))
 
-            if verbose > 0 and epoch % 2000 == 0:
+            if verbose > 0 and epoch % 500 == 0:
                 print(f"epoch: {epoch}/{epochs}\tloss: {loss[-1]}")
 
         print(f"done! final loss: {loss[-1]}")
@@ -121,7 +129,34 @@ class MLP():
 
 
 def main():
-    pass
+    import pandas as pd
+    from sklearn.preprocessing import StandardScaler, OneHotEncoder
+
+    df_training = pd.read_csv(
+        "NeuralNetworks/data/mio1/classification/easy-training.csv")
+    df_test = pd.read_csv(
+        "NeuralNetworks/data/mio1/classification/easy-test.csv")
+
+    x_train = df_training[['x', 'y']].values.T
+    y_train = df_training['c'].values.reshape(-1, 1)
+
+    x_test = df_test[['x', 'y']].values.T
+    y_test = df_test['c'].values.reshape(-1, 1)
+
+    enc = OneHotEncoder(sparse_output=False)
+    y_train_oh = enc.fit_transform(y_train).T
+    y_test_oh = enc.transform(y_test).T
+
+    standard_scaler = StandardScaler()
+    x_train_normalised = standard_scaler.fit_transform(x_train.T).T
+    x_test_normalised = standard_scaler.transform(x_test.T).T
+
+    model = MLP(layers=[
+        Layer(2, 2, activation_name="softmax"),
+    ])
+
+    loss = model.fit(x_train_normalised, y_train_oh, learning_rate=0.001,
+                     epochs=2_000, verbose=1, batch_size=25, loss_function="log_loss")
 
 
 if __name__ == '__main__':
