@@ -98,14 +98,6 @@ class Softmax():
         if not activated:
             values = self(values)
 
-        # output_dim = values.shape[0]
-        # batch_size = values.shape[1]
-
-        # I = np.stack([np.identity(output_dim)] * batch_size, axis=1)
-        # values = values.reshape((output_dim, batch_size, 1))
-
-        # J = np.transpose((I - values), axes=(2, 1, 0)) * values
-
         # calculate jacobian
         I = np.identity(values.shape[0])
         temp1 = np.einsum('ij,ik->ijk', values, I)
