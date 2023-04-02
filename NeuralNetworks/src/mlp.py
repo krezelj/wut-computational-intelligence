@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.metrics import mean_squared_error, log_loss
 from src.layer import Layer
+from src.losses import *
 
 
 class MLP():
@@ -25,7 +26,7 @@ class MLP():
             momentum_decay_rate=0.9,
             squared_gradient_decay_rate=0.999,
             warm_start=True,
-            loss_function='mse',
+            loss_function_name='mse',
             verbose=0,
             ):
 
@@ -35,6 +36,9 @@ class MLP():
 
         epoch = 0
         iteration = 0
+
+        loss_function, d_loss_function = get_loss_function_by_name(
+            loss_function_name)
 
         # if warmstart False reset weights for each layer??
         if not warm_start or self.first_fit:
@@ -63,11 +67,7 @@ class MLP():
                 y = Y[:, batch_start_idx:batch_end_idx]
                 y_predicted = self.predict(x, remember_data=True)
 
-                # error = 2 * (y_predicted - y) / y_predicted.shape[0]
-                eps = np.finfo(y_predicted.dtype).eps
-                y_predicted = np.maximum(eps, np.minimum(1 - eps, y_predicted))
-                error = ((1 - y) / (1 - y_predicted) - y /
-                         y_predicted) / y_predicted.shape[0]
+                error = d_loss_function(y, y_predicted)
                 for layer in self.layers[::-1]:
                     error = layer.activation.derivative(
                         layer.last_output, error=error)
@@ -81,10 +81,7 @@ class MLP():
                         iteration, learning_rate, momentum_decay_rate, squared_gradient_decay_rate)
 
             # calculate loss after epoch
-            if loss_function == 'mse':
-                loss.append(mean_squared_error(Y.T, self.predict(X).T))
-            elif loss_function == 'log_loss':
-                loss.append(log_loss(Y.T, self.predict(X).T))
+            loss.append(loss_function(Y, self.predict(X)))
 
             if verbose > 0 and epoch % 500 == 0:
                 print(f"epoch: {epoch}/{epochs}\tloss: {loss[-1]}")
