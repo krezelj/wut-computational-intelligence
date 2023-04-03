@@ -28,9 +28,6 @@ class MLP():
     def fit(self, X, Y,
             epochs=1,
             batch_size=1,
-            learning_rate=1e-3,
-            momentum_decay_rate=0.9,
-            squared_gradient_decay_rate=0.999,
             warm_start=True,
             loss_function_name='mse',
             verbose=0,
@@ -46,12 +43,9 @@ class MLP():
         loss_function, d_loss_function = get_loss_function_by_name(
             loss_function_name)
 
-        # if warmstart False reset weights for each layer??
         if not warm_start or self.first_fit:
             self.first_fit = False
             self.optimiser.reset()
-            # for layer in self.layers:
-            #     layer.reset_momentum()
 
         # fit loop
         while epoch < epochs:
@@ -78,11 +72,7 @@ class MLP():
                 for step in self.steps[::-1]:
                     gradient = step.backward(gradient)
 
-                # apply new weights
                 self.optimiser.step()
-                # for layer in self.layers:
-                #     layer.update_weights(
-                #         iteration, learning_rate, momentum_decay_rate, squared_gradient_decay_rate)
 
             # calculate loss after epoch
             loss.append(loss_function(Y, self.predict(X)))
