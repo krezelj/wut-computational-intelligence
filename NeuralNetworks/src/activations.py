@@ -2,20 +2,6 @@ import numpy as np
 from scipy.special import expit, softmax
 
 
-def get_activation_by_name(activation):
-    if activation == "sigmoid":
-        return Sigmoid()
-    elif activation == "tanh":
-        return Tanh()
-    elif activation == "relu":
-        return ReLU()
-    elif activation == "linear":
-        return Linear()
-    elif activation == "softmax":
-        return Softmax()
-    return activation
-
-
 class Activation():
 
     __slots__ = ['activation', 'd_activation', 'last_output']
