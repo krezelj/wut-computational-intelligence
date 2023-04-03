@@ -1,21 +1,24 @@
 import numpy as np
-from sklearn.metrics import mean_squared_error, log_loss
 from src.layer import Layer
 from src.losses import *
 
 
 class MLP():
 
-    __slots__ = ['layers', 'first_fit']
+    __slots__ = ['steps', 'layers', 'first_fit']
 
-    def __init__(self, layers):
-        self.layers = layers
+    def __init__(self, steps):
+        self.steps = steps
         self.first_fit = True
+        self.layers = []
+        for step in self.steps:
+            if type(step) is Layer:
+                self.layers.append(step)
 
-    def predict(self, input, remember_data=False):
+    def predict(self, input):
         output = input
-        for layer in self.layers:
-            output = layer.forward(output, remember_data=remember_data)
+        for step in self.steps:
+            output = step.forward(output)
 
         return output
 
@@ -67,17 +70,13 @@ class MLP():
                 y = Y[:, batch_start_idx:batch_end_idx]
                 y_predicted = self.predict(x, remember_data=True)
 
-                error = d_loss_function(y, y_predicted)
-                for layer in self.layers[::-1]:
-                    error = layer.activation.derivative(
-                        layer.last_output, error=error)
-                    layer.backward(error, momentum_decay_rate,
-                                   squared_gradient_decay_rate)
-                    error = np.transpose(layer.weights) @ error
+                gradient = d_loss_function(y, y_predicted)
+                for step in self.steps[::-1]:
+                    gradient = step.backward(gradient)
 
                 # apply new weights
                 for layer in self.layers:
-                    layer.update_weights(
+                    step.update_weights(
                         iteration, learning_rate, momentum_decay_rate, squared_gradient_decay_rate)
 
             # calculate loss after epoch
@@ -89,71 +88,9 @@ class MLP():
         print(f"done! final loss: {loss[-1]}")
         return loss
 
-    def save_model(self, path, model_name=""):
-        full_path = path + '/' + model_name
-
-        data = {}
-        # TODO Add Enums for weights, biases, activations
-        for i, layer in enumerate(self.layers):
-            data[f'{i}_0_weights'] = layer.weights
-            data[f'{i}_1_biases'] = layer.biases
-            data[f'{i}_2_activation_name'] = np.array([layer.activation_name])
-
-        np.savez(full_path, **data)
-
-    @classmethod
-    def load_model(cls, path, model_name=""):
-        full_path = path + '/' + model_name + '.npz'
-        data = np.load(full_path)
-
-        # TODO Parametrise the number of attributes remembered per layer
-        weights = [None] * (len(data) // 3)
-        biases = [None] * (len(data) // 3)
-        activations = [None] * (len(data) // 3)
-        for key, value in data.items():
-            layer_idx = ord(key[0]) - 48
-            if key[2] == '0':  # name encoding meaning weights
-                weights[layer_idx] = value
-            elif key[2] == '1':  # name encoding meaning biases
-                biases[layer_idx] = value
-            elif key[2] == '2':  # name encoding meaning activation
-                activations[layer_idx] = value[0]
-
-        layers = [Layer(w.shape[1], w.shape[0], weights=w, biases=b, activation_name=a)
-                  for w, b, a in zip(weights, biases, activations)]
-
-        return MLP(layers=layers)
-
 
 def main():
-    import pandas as pd
-    from sklearn.preprocessing import StandardScaler, OneHotEncoder
-
-    df_training = pd.read_csv(
-        "NeuralNetworks/data/mio1/classification/easy-training.csv")
-    df_test = pd.read_csv(
-        "NeuralNetworks/data/mio1/classification/easy-test.csv")
-
-    x_train = df_training[['x', 'y']].values.T
-    y_train = df_training['c'].values.reshape(-1, 1)
-
-    x_test = df_test[['x', 'y']].values.T
-    y_test = df_test['c'].values.reshape(-1, 1)
-
-    enc = OneHotEncoder(sparse_output=False)
-    y_train_oh = enc.fit_transform(y_train).T
-    y_test_oh = enc.transform(y_test).T
-
-    standard_scaler = StandardScaler()
-    x_train_normalised = standard_scaler.fit_transform(x_train.T).T
-    x_test_normalised = standard_scaler.transform(x_test.T).T
-
-    model = MLP(layers=[
-        Layer(2, 2, activation_name="softmax"),
-    ])
-
-    loss = model.fit(x_train_normalised, y_train_oh, learning_rate=0.001,
-                     epochs=2_000, verbose=1, batch_size=25, loss_function="log_loss")
+    pass
 
 
 if __name__ == '__main__':

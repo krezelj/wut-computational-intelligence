@@ -5,17 +5,14 @@ from src.activations import get_activation_by_name
 class Layer():
 
     __slots__ = ['weights', 'biases',
-                 'activation', 'activation_name',
                  'input_dim', 'output_dim',
                  'last_input', 'last_output',
                  'momentum_weights', 'momentum_biases',
                  'gradient_weights_squared', 'gradient_biases_squared']
 
-    def __init__(self, input_dim, output_dim, weights=None, biases=None, activation_name="sigmoid"):
+    def __init__(self, input_dim, output_dim, weights=None, biases=None):
         self.input_dim = input_dim
         self.output_dim = output_dim
-        self.activation_name = activation_name
-        self.activation = get_activation_by_name(activation_name)
 
         if weights is None:
             self.__init_weights()
@@ -31,21 +28,17 @@ class Layer():
 
         self.reset_momentum()
 
-    def forward(self, input, remember_data=False):
-        output = self.activation(self.weights @ input + self.biases)
-        if remember_data:
-            self.last_input = input
-            self.last_output = output
-        return output
+    def forward(self, input):
+        self.last_input = input
+        return self.weights @ input + self.biases
 
-    def backward(self, error,
-                 momentum_decay_rate,
-                 squared_gradient_decay_rate):
-        batch_size = error.shape[1]
+    def backward(self, gradient, momentum_decay_rate=0.9, squared_gradient_decay_rate=0.999):
+        batch_size = gradient.shape[1]
 
         # calculate batch gradient
-        gradient_weights = error @ np.transpose(self.last_input) / batch_size
-        gradient_biases = np.mean(error, axis=1, keepdims=True)
+        gradient_weights = gradient @ np.transpose(
+            self.last_input) / batch_size
+        gradient_biases = np.mean(gradient, axis=1, keepdims=True)
 
         # update momentum
         self.momentum_weights = momentum_decay_rate * self.momentum_weights + \
@@ -60,6 +53,8 @@ class Layer():
         self.gradient_biases_squared = squared_gradient_decay_rate * self.gradient_biases_squared + \
             (1 - squared_gradient_decay_rate) * \
             np.square(gradient_biases)
+
+        return np.transpose(self.weights) @ gradient
 
     def update_weights(self, iteration,
                        learning_rate=1e-3,
