@@ -68,7 +68,7 @@ class MLP():
 
                 x = X[:, batch_start_idx:batch_end_idx]
                 y = Y[:, batch_start_idx:batch_end_idx]
-                y_predicted = self.predict(x, remember_data=True)
+                y_predicted = self.predict(x)
 
                 gradient = d_loss_function(y, y_predicted)
                 for step in self.steps[::-1]:
@@ -76,7 +76,7 @@ class MLP():
 
                 # apply new weights
                 for layer in self.layers:
-                    step.update_weights(
+                    layer.update_weights(
                         iteration, learning_rate, momentum_decay_rate, squared_gradient_decay_rate)
 
             # calculate loss after epoch
