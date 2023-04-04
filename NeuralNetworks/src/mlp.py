@@ -77,10 +77,11 @@ class MLP():
             # calculate loss after epoch
             loss.append(loss_function(Y, self.predict(X)))
 
-            if verbose > 0 and epoch % 500 == 0:
+            if (verbose > 1 and epoch % 500 == 0) or (verbose > 2):
                 print(f"epoch: {epoch}/{epochs}\tloss: {loss[-1]}")
 
-        print(f"done! final loss: {loss[-1]}")
+        if verbose > 0:
+            print(f"done! final loss: {loss[-1]}")
         return loss
 
 
