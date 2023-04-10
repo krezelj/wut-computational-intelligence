@@ -75,10 +75,10 @@ class RMSprop(Optimiser):
                 (1 - self.decay) * np.square(layer.gradient_biases)
 
             layer.weights += -self.learning_rate * \
-                (self.gradient_weights[i] /
+                (layer.gradient_weights /
                  np.sqrt(self.momentum_weights_squared[i]))
             layer.biases += -self.learning_rate * \
-                (self.gradient_biases[i] /
+                (layer.gradient_biases /
                  np.sqrt(self.momentum_biases_squared[i]))
 
 
