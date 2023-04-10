@@ -1,7 +1,8 @@
 import numpy as np
+from .step import Step
 
 
-class Layer():
+class Layer(Step):
 
     __slots__ = ['weights', 'biases',
                  'input_dim', 'output_dim',

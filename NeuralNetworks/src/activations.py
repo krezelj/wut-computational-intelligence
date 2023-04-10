@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.special import expit, softmax
+from .step import Step
 
 
 def get_activation_by_name(activation):
@@ -16,7 +17,7 @@ def get_activation_by_name(activation):
     return activation
 
 
-class Activation():
+class Activation(Step):
 
     __slots__ = ['activation', 'd_activation', 'last_output']
 
