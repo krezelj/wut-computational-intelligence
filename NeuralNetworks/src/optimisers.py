@@ -3,38 +3,44 @@ import numpy as np
 
 class Optimiser():
 
-    __slots__ = ['learning_rate', 'layers']
+    __slots__ = ['learning_rate', 'layers', 'learning_rate_decay']
 
-    def __init__(self, learning_rate=1e-3):
+    def __init__(self, learning_rate=1e-3, learning_rate_decay=1.0):
         self.learning_rate = learning_rate
+        self.learning_rate_decay = learning_rate_decay
 
     def set_layers(self, layers):
         self.layers = layers
         self.reset()
 
     def reset(self):
-        raise NotImplementedError
+        if self.layers is None:
+            raise Exception()
+
+    def step(self):
+        if self.layers is None:
+            raise Exception()
+
+        self.learning_rate *= self.learning_rate_decay
 
 
 class SGD(Optimiser):
 
     __slots__ = ['momentum', 'momentum_weights', 'momentum_biases']
 
-    def __init__(self, learning_rate=1e-3, momentum=0) -> None:
-        super().__init__(learning_rate)
+    def __init__(self, learning_rate=1e-3, momentum=0, learning_rate_decay=1.0) -> None:
+        super().__init__(learning_rate, learning_rate_decay)
         self.momentum = momentum
 
     def reset(self):
-        if self.layers is None:
-            raise Exception()
+        super().reset()
 
         n_layers = len(self.layers)
         self.momentum_weights = [0] * n_layers
         self.momentum_biases = [0] * n_layers
 
     def step(self):
-        if self.layers is None:
-            raise Exception()
+        super().step()
 
         for i, layer in enumerate(self.layers):
             self.momentum_weights[i] = self.momentum * \
@@ -52,21 +58,19 @@ class RMSprop(Optimiser):
                  'momentum_weights_squared',
                  'momentum_biases_squared']
 
-    def __init__(self, learning_rate=1e-3, decay=0.99) -> None:
-        super().__init__(learning_rate)
+    def __init__(self, learning_rate=1e-3, decay=0.99, learning_rate_decay=1.0) -> None:
+        super().__init__(learning_rate, learning_rate_decay)
         self.decay = decay
 
     def reset(self):
-        if self.layers is None:
-            raise Exception()
+        super().reset()
 
         n_layers = len(self.layers)
         self.momentum_weights_squared = [0] * n_layers
         self.momentum_biases_squared = [0] * n_layers
 
     def step(self):
-        if self.layers is None:
-            raise Exception()
+        super().step()
 
         for i, layer in enumerate(self.layers):
             self.momentum_weights_squared[i] = self.decay * self.momentum_weights_squared[i] + \
@@ -88,16 +92,15 @@ class Adam(Optimiser):
                  'momentum_weights', 'momentum_biases',
                  'gradient_weights_squared', 'gradient_biases_squared']
 
-    def __init__(self, learning_rate=1e-3, beta_1=0.9, beta_2=0.999, eps=1e-8) -> None:
-        super().__init__(learning_rate)
+    def __init__(self, learning_rate=1e-3, beta_1=0.9, beta_2=0.999, eps=1e-8, learning_rate_decay=1.0) -> None:
+        super().__init__(learning_rate, learning_rate_decay)
         self.beta_1 = beta_1
         self.beta_2 = beta_2
         self.eps = eps
         self.iteration = 0
 
     def reset(self):
-        if self.layers is None:
-            raise Exception()
+        super().reset()
 
         n_layers = len(self.layers)
         self.momentum_weights = [0] * n_layers
@@ -106,8 +109,7 @@ class Adam(Optimiser):
         self.gradient_biases_squared = [0] * n_layers
 
     def step(self):
-        if self.layers is None:
-            raise Exception()
+        super().step()
 
         self.iteration += 1
         for i, layer in enumerate(self.layers):
