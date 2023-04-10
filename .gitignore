@@ -1,6 +1,11 @@
+# files
 *.pyc
-*mio1
 *.npz
 *.csv
 TODO.txt
 tests.ipynb
+
+# directories
+*mio1
+*images
+
