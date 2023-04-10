@@ -5,11 +5,13 @@ from src.losses import get_loss_function_by_name
 
 class MLP():
 
-    __slots__ = ['steps', 'layers', 'optimiser', 'first_fit']
+    __slots__ = ['steps', 'layers', 'optimiser', 'first_fit', '_training']
 
     def __init__(self, steps, optimiser):
         self.steps = steps
         self.first_fit = True
+        self._training = False
+        self.training = False
 
         self.layers = []
         for step in self.steps:
@@ -19,13 +21,24 @@ class MLP():
         self.optimiser = optimiser
         self.optimiser.set_layers(self.layers)
 
+    @property
+    def training(self):
+        return self._training
+
+    @training.setter
+    def training(self, value):
+        self._training = value
+        for step in self.steps:
+            step.training = value
+
     def predict(self, input):
         output = input
         for step in self.steps:
             output = step.forward(output)
         return output
 
-    def fit(self, X, Y,
+    def fit(self, X_train, Y_train,
+            X_validation, Y_validation,
             epochs=1,
             batch_size=1,
             warm_start=True,
@@ -34,8 +47,9 @@ class MLP():
             ):
 
         # initialise variables
-        batches_per_episode = int(np.ceil(X.shape[1] / batch_size))
-        loss = []
+        batches_per_episode = int(np.ceil(X_train.shape[1] / batch_size))
+        validation_loss = []
+        train_loss = []
 
         epoch = 0
         iteration = 0
@@ -48,14 +62,15 @@ class MLP():
             self.optimiser.reset()
 
         # fit loop
+        self.training = True
         while epoch < epochs:
             epoch += 1
 
             # reorder samples for each episode
-            random_indices = np.arange(0, X.shape[1])
+            random_indices = np.arange(0, X_train.shape[1])
             np.random.shuffle(random_indices)
-            X = X[:, random_indices]
-            Y = Y[:, random_indices]
+            X_train = X_train[:, random_indices]
+            Y_train = Y_train[:, random_indices]
 
             # fitting
             for batch_idx in range(batches_per_episode):
@@ -64,8 +79,8 @@ class MLP():
                 batch_start_idx = batch_idx * batch_size
                 batch_end_idx = (batch_idx + 1) * batch_size
 
-                x = X[:, batch_start_idx:batch_end_idx]
-                y = Y[:, batch_start_idx:batch_end_idx]
+                x = X_train[:, batch_start_idx:batch_end_idx]
+                y = Y_train[:, batch_start_idx:batch_end_idx]
                 y_predicted = self.predict(x)
 
                 gradient = d_loss_function(y, y_predicted)
@@ -75,14 +90,22 @@ class MLP():
                 self.optimiser.step()
 
             # calculate loss after epoch
-            loss.append(loss_function(Y, self.predict(X)))
+            self.training = False
+            validation_loss.append(loss_function(
+                Y_validation, self.predict(X_validation)))
+            train_loss.append(loss_function(
+                Y_train, self.predict(X_train)))
+            self.training = True
+
+            # TODO Implement early stopping
 
             if (verbose > 1 and epoch % 500 == 0) or (verbose > 2):
-                print(f"epoch: {epoch}/{epochs}\tloss: {loss[-1]}")
+                print(f"epoch: {epoch}/{epochs}\tloss: {validation_loss[-1]}")
 
+        self.training = False
         if verbose > 0:
-            print(f"done! final loss: {loss[-1]}")
-        return loss
+            print(f"done! final loss: {validation_loss[-1]}")
+        return validation_loss, train_loss
 
 
 def main():

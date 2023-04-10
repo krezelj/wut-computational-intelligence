@@ -25,8 +25,8 @@ class Activation(Step):
         self.activation = activation
         self.d_activation = d_activation
 
-    def forward(self, input):
-        self.last_output = self.activation(input)
+    def forward(self, inputs):
+        self.last_output = self.activation(inputs)
         return self.last_output
 
     def backward(self, gradient):

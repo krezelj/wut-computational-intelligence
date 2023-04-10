@@ -25,9 +25,9 @@ class Layer(Step):
             assert (biases.shape == (output_dim, 1))
             self.biases = biases
 
-    def forward(self, input):
-        self.last_input = input
-        return self.weights @ input + self.biases
+    def forward(self, inputs):
+        self.last_input = inputs
+        return self.weights @ inputs + self.biases
 
     def backward(self, gradient):
         batch_size = gradient.shape[1]
