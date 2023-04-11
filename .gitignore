@@ -3,7 +3,7 @@
 *.npz
 *.csv
 TODO.txt
-tests.ipynb
+*tests.ipynb
 
 # directories
 *mio1
