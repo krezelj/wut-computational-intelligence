@@ -1,17 +1,25 @@
 import numpy as np
 from .step import Step
+from .regularisers import *
 
 
 class Layer(Step):
 
-    __slots__ = ['weights', 'biases',
+    __slots__ = ['weights', 'biases', 'regulariser',
                  'input_dim', 'output_dim',
                  'last_input', 'last_output',
                  'gradient_weights', 'gradient_biases']
 
-    def __init__(self, input_dim, output_dim, weights=None, biases=None):
+    def __init__(self, input_dim, output_dim, weights=None, biases=None, regulariser=None):
         self.input_dim = input_dim
         self.output_dim = output_dim
+
+        if regulariser == 'l1':
+            self.regulariser = L1()
+        elif regulariser == 'l2':
+            self.regulariser = L2()
+        else:
+            self.regulariser = NoRegulariser()
 
         if weights is None:
             self.__init_weights()
@@ -35,6 +43,12 @@ class Layer(Step):
         self.gradient_weights = gradient @ np.transpose(
             self.last_input) / batch_size
         self.gradient_biases = np.mean(gradient, axis=1, keepdims=True)
+
+        # if self.regulariser is not None:
+        #     self.gradient_weights += self.regulariser.compute_gradients(
+        #         self.gradient_weights)
+        #     self.gradient_biases += self.regulariser.compute_gradients(
+        #         self.gradient_biases)
 
         return np.transpose(self.weights) @ gradient
 
