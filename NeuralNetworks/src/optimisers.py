@@ -139,3 +139,48 @@ class Adam(Optimiser):
                 np.sqrt(gradient_weights_squared_corrected + self.eps)
             layer.biases += -self.learning_rate * momentum_biases_corrected / \
                 np.sqrt(gradient_biases_squared_corrected + self.eps)
+
+
+class SGDW(SGD):
+
+    __slots__ = ['weight_decay']
+
+    def __init__(self, learning_rate=1e-3, momentum=0, weight_decay=0.001, learning_rate_decay=1.0) -> None:
+        super().__init__(learning_rate, momentum, learning_rate_decay)
+        self.weight_decay = weight_decay
+
+    def step(self):
+        super().step()
+
+        for i, layer in enumerate(self.layers):
+            layer.weights += -self.learning_rate * self.weight_decay * layer.weights
+
+
+class RMSpropW(RMSprop):
+
+    __slots__ = ['weight_decay']
+
+    def __init__(self, learning_rate=1e-3, decay=0.99, weight_decay=0.001, learning_rate_decay=1.0) -> None:
+        super().__init__(learning_rate, decay, learning_rate_decay)
+        self.weight_decay = weight_decay
+
+    def step(self):
+        super().step()
+
+        for i, layer in enumerate(self.layers):
+            layer.weights += -self.learning_rate * self.weight_decay * layer.weights
+
+
+class AdamW(Adam):
+
+    __slots__ = ['weight_decay']
+
+    def __init__(self, learning_rate=1e-3, beta_1=0.9, beta_2=0.999, weight_decay=0.001, eps=1e-8, learning_rate_decay=1.0) -> None:
+        super().__init__(learning_rate, beta_1, beta_2, eps, learning_rate_decay)
+        self.weight_decay = weight_decay
+
+    def step(self):
+        super().step()
+
+        for i, layer in enumerate(self.layers):
+            layer.weights += -self.learning_rate * self.weight_decay * layer.weights
