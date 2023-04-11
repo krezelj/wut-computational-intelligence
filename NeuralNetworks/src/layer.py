@@ -44,11 +44,11 @@ class Layer(Step):
             self.last_input) / batch_size
         self.gradient_biases = np.mean(gradient, axis=1, keepdims=True)
 
-        # if self.regulariser is not None:
-        #     self.gradient_weights += self.regulariser.compute_gradients(
-        #         self.gradient_weights)
-        #     self.gradient_biases += self.regulariser.compute_gradients(
-        #         self.gradient_biases)
+        # regularisation
+        self.gradient_weights += self.regulariser.compute_gradients(
+            self.gradient_weights)
+        self.gradient_biases += self.regulariser.compute_gradients(
+            self.gradient_biases)
 
         return np.transpose(self.weights) @ gradient
 
