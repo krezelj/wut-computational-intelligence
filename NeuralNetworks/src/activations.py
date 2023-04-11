@@ -90,7 +90,7 @@ class ReLU(Activation):
         super().__init__(self.__call__, self.derivative)
 
     def __call__(self, values):
-        return np.maximum(0, values)
+        return np.maximum(self.epsilon * values, values)
 
     def derivative(self, values, activated=True):
         # if activated set to True it's assumed that values are already an output of the relu function
