@@ -102,11 +102,14 @@ class ReLU(Activation):
 
 class Softmax(Activation):
 
-    def __init__(self):
+    __slots__ = ['eps']
+
+    def __init__(self, eps=1e-8):
         super().__init__(self.__call__, self.derivative)
+        self.eps = eps
 
     def __call__(self, values):
-        return softmax(values, axis=0)
+        return softmax(values + self.eps, axis=0)
 
     def derivative(self, values, activated=True):
         # if activated set to True it's assumed that values are already an output of the softmax function
