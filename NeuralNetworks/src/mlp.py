@@ -99,7 +99,10 @@ class MLP():
 
             # TODO Implement early stopping
 
-            if (verbose > 1 and epoch % 500 == 0) or (verbose > 2):
+            if verbose > 1 and epoch % 500 == 0:
+                avg_vloss = np.mean(validation_loss[-500:])
+                print(f"epoch: {epoch}/{epochs}\t avg_loss: {avg_vloss}")
+            elif verbose > 2:
                 print(f"epoch: {epoch}/{epochs}\tloss: {validation_loss[-1]}")
 
         self.training = False
