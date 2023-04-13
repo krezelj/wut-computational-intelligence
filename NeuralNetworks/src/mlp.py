@@ -52,7 +52,6 @@ class MLP():
         train_loss = []
 
         epoch = 0
-        iteration = 0
 
         loss_function, d_loss_function = get_loss_function_by_name(
             loss_function_name)
@@ -74,7 +73,8 @@ class MLP():
 
             # fitting
             for batch_idx in range(batches_per_episode):
-                iteration += 1
+                if verbose > 3:
+                    print(f"\tBatch {batch_idx}\{batches_per_episode}")
 
                 batch_start_idx = batch_idx * batch_size
                 batch_end_idx = (batch_idx + 1) * batch_size
