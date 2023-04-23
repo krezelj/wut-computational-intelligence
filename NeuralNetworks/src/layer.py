@@ -14,9 +14,9 @@ class Layer(Step):
         self.input_dim = input_dim
         self.output_dim = output_dim
 
-        if regulariser == 'l1':
+        if regulariser == 'l1' or type(regulariser) is L1:
             self.regulariser = L1()
-        elif regulariser == 'l2':
+        elif regulariser == 'l2' or type(regulariser) is L2:
             self.regulariser = L2()
         else:
             self.regulariser = NoRegulariser()
