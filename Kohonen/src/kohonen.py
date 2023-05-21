@@ -26,7 +26,7 @@ class Kohonen:
         self.__calculate_self_distances()
 
     def __init_weights(self):
-        self.weights = np.random.uniform(low=-1, high=1, size=(self.m, self.n, self.k))
+        self.weights = np.random.uniform(low=0, high=1, size=(self.m, self.n, self.k))
 
     def fit(self, X_train, epochs):
         for epoch in range(epochs):
@@ -112,7 +112,7 @@ def gaussian(distances, t=1):
 
 
 def mexican_hat(distances, t=1):
-    return (2 - 4 * np.square(distances / 4)) * np.exp(-np.square(distances / 4))
+    return (2 - 4 * np.square(distances / 6)) * np.exp(-np.square(distances / 6))
 
 
 def cartesian_product(*arrays):
